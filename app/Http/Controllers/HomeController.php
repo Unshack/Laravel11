@@ -220,31 +220,52 @@ class HomeController extends Controller
 
     }
 
-    // public function stripePost(Request $request,$value)
-
-    // {
-
-    //     Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
+    public function stripePost(Request $request,$value)
+       {
+        Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
     
+        Stripe\Charge::create ([
+                "amount" => $value * 100,
+                "currency" => "usd",
+                "source" => $request->stripeToken,
+                "description" => "Test payment complete" 
+        ]);
+      
+        $name = Auth::user()->name;
 
-    //     Stripe\Charge::create ([
+        $phone = Auth::user()->phone;
 
-    //             "amount" => $value * 100,
+        $address = Auth::user()->address;
 
-    //             "currency" => "usd",
+        $userid=Auth::user()->id;
 
-    //             "source" => $request->stripeToken,
+        $cart= Cart::where('user_id',$userid)->get();
 
-    //             "description" => "Test Payment Complete."
+        foreach($cart as $carts){
+          $order=new Order;
+          $order->name=$name;
+          $order->rec_address=$address;
+          $order->phone=$phone;
+          $order->user_id=$userid;
+          $order->product_id=$carts->product_id;
+          $order->payment_status="paid";
+          $order->save();
 
-    //         ]);
 
-    //         Session::flash('success', 'Payment successful!');
+        }
+        $cart_remove = Cart::where('user_id',$userid)->get();
 
-    //     return back();
+        foreach($cart_remove as $remove)
+        {
+            $data=Cart::find($remove->id);
+            $data->delete();
+        } 
 
-    // }
+        toastr()->timeOut(5000)->closeButton()->addSuccess('Payment Successful');
+
+        return redirect('mycart');
+        }
+
 
     
 
